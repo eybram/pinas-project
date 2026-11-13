@@ -1,0 +1,11 @@
+# Datos y estado del simulador (se regeneran al ejecutarlo)
+build/tools/mock-data/
+
+# Artefactos de compilación de Arduino
+build/ProyectoSueloESP32/build/
+
+# Sistema / editor
+Thumbs.db
+desktop.ini
+.DS_Store
+*.log

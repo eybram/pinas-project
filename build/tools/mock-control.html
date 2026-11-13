@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulador · Panel de control</title>
+<style>
+:root{font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#1b2938;background:#f3f6f7}
+*{box-sizing:border-box}body{margin:0}header{background:#173e35;color:#fff;padding:26px 20px 24px}header .wrap{max-width:900px;margin:auto}
+h1{margin:0;font-size:1.65rem;line-height:1.3}h2{font-size:1.2rem;margin:0 0 12px}h3{margin:0 0 8px;font-size:1rem}
+small,.muted{color:#607080}header small{color:#bddece}main{max-width:900px;margin:22px auto;padding:0 16px 45px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.card{background:#fff;border:1px solid #d9e3e5;border-radius:13px;padding:19px;box-shadow:0 2px 7px #0c29240b;margin:14px 0}
+button{border:1px solid #0c6652;border-radius:8px;background:#0c6652;color:white;padding:10px 15px;font:inherit;cursor:pointer}
+button.alt{background:white;color:#0c6652}button.danger{background:white;color:#af2626;border-color:#af2626}
+button:disabled{opacity:.55;cursor:wait}a.link{border:1px solid #0c6652;border-radius:8px;background:#0c6652;color:white;padding:10px 15px;text-decoration:none;display:inline-block}
+label{display:block;font-weight:600;margin:10px 0 4px}input{width:100%;font:inherit;padding:9px;border:1px solid #afbdc6;border-radius:7px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin:14px 0}
+.num{font-size:2rem;font-weight:720;letter-spacing:-.04em}.tag{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:#607080}
+.notice{border-left:3px solid #e7a52d;background:#fffbeb;padding:10px 12px;border-radius:5px;margin:10px 0}
+table{border-collapse:collapse;width:100%;font-size:.9rem}td,th{padding:8px;border-bottom:1px solid #e4eaef;text-align:left}th{background:#f6faf9}
+code{background:#eef3f4;padding:1px 5px;border-radius:4px}
+</style>
+</head>
+<body>
+<header><div class="wrap"><small>Solo para pruebas · No es el firmware</small>
+<h1>Simulador del ESP32</h1>
+<p style="margin:5px 0 0;color:#d1e7de">Controla los mV que "lee" la placa para probar el panel sin hardware</p></div></header>
+<main>
+
+<div class="row"><a class="link" href="/">Abrir el panel (dashboard) →</a><span id="estado" class="muted">Cargando…</span></div>
+
+<div class="card">
+<h2>Valores simulados del ADC</h2>
+<p class="muted">Estos son los mV que devolverán <code>/api/status</code>, <code>/api/preview</code> y <code>/api/save</code>. Aplicalos antes de calibrar o guardar en el panel.</p>
+<div class="grid">
+<div><label for="hum_mv">Humedad · GPIO34 (mV)</label><input id="hum_mv" type="number" min="0" max="3300" step="10" value="2800"></div>
+<div><label for="ph_mv">pH · GPIO35 (mV)</label><input id="ph_mv" type="number" min="0" max="3300" step="10" value="1500"></div>
+</div>
+<div class="row"><button onclick="aplicar()">Aplicar valores</button></div>
+<p id="out" class="muted"></p>
+</div>
+
+<div class="card">
+<h2>Estado actual del simulador</h2>
+<div class="grid">
+<div><div class="tag">Humedad</div><div class="num" id="humIdx">—</div><div class="muted" id="humRef">—</div></div>
+<div><div class="tag">pH</div><div class="num" id="phVal">—</div><div class="muted" id="phRef">—</div></div>
+<div><div class="tag">Filas en datos.csv</div><div class="num" id="nReg">—</div><div class="muted">Historial simulado</div></div>
+</div>
+<div class="row">
+<button class="alt" onclick="seed()">Generar 12 sesiones de ejemplo</button>
+<button class="danger" onclick="resetear()">Borrar calibración y datos</button>
+</div>
+<p class="muted">Las sesiones de ejemplo usan una calibración demo (seco 2800 mV, húmedo 1200 mV, pH7 1500 mV, pH4 2030 mV) si aún no hay una, e incluyen una coincidencia provisional persistente.</p>
+</div>
+
+<div class="card">
+<h2>Casos de validación del plan (sección 5)</h2>
+<table>
+<tr><th>Caso</th><th>Cómo reproducirlo aquí</th></tr>
+<tr><td>1 · Humedad sin calibrar</td><td>Pulsa <b>Borrar calibración y datos</b>, abre el panel y mira la tarjeta de humedad: muestra mV, sin índice.</td></tr>
+<tr><td>2 · pH no evaluable</td><td>Sin calibrar pH (o sin marcar la casilla de la sonda): la vista previa dice <b>no evaluable</b>, nunca inventa pH.</td></tr>
+<tr><td>3 · Ambas variables válidas</td><td>Pon hum_mv=2800 y calibra <i>seco</i>; pon 1200 y calibra <i>húmedo</i>; en pH pon 1500 y calibra <i>tampón 7</i>; pon 2030 y calibra <i>tampón 4</i>. Luego guarda sesión.</td></tr>
+<tr><td>4 · Coincidencia y persistencia</td><td>Guarda una sesión base y luego cambia hum_mv y ph_mv con salto grande (≥ 20 índices y ≥ 1 unidad de pH) y guarda de nuevo el mismo día → <b>coincidencia</b>. Con dos coincidencias separadas 18–30 h → <b>persistente</b> (o usa el botón de ejemplo).</td></tr>
+<tr><td>5 · Persistencia tras reinicio</td><td>Detén el simulador (Ctrl+C), vuelve a ejecutarlo: el historial sigue en <code>tools\mock-data\</code>, como LittleFS en la placa.</td></tr>
+</table>
+<div class="notice">Este simulador solo sirve para revisar el panel y su lógica. <b>No sustituye</b> las pruebas con la placa, la calibración física ni los datos reales.</div>
+</div>
+
+</main>
+<script>
+const $=id=>document.getElementById(id);
+async function j(url){const r=await fetch(url);if(!r.ok)throw Error('HTTP '+r.status);return r.json()}
+async function estado(){
+  try{
+    const s=await j('/mock/state');
+    const st=await j('/api/status');
+    $('estado').textContent='Simulador activo · localhost';
+    $('hum_mv').value=s.hum_mv;$('ph_mv').value=s.ph_mv;$('nReg').textContent=s.rows;
+    $('humIdx').textContent=st.hum_index===null?'Sin calibrar':st.hum_index.toFixed(1);
+    $('phVal').textContent=(s.ph7!==null&&s.ph4!==null)?'Calibrado':'Sin calibrar';
+    $('humRef').textContent='Seca: '+(s.hum_dry===null?'—':s.hum_dry+' mV')+' · Húmeda: '+(s.hum_wet===null?'—':s.hum_wet+' mV');
+    $('phRef').textContent='Tampón 7: '+(s.ph7===null?'—':s.ph7+' mV')+' · Tampón 4: '+(s.ph4===null?'—':s.ph4+' mV');
+  }catch(e){$('estado').textContent='Sin conexión con el simulador';}
+}
+async function aplicar(){
+  const u='/mock/set?hum_mv='+encodeURIComponent($('hum_mv').value)+'&ph_mv='+encodeURIComponent($('ph_mv').value);
+  $('out').textContent='Aplicando…';
+  try{await j(u);$('out').textContent='Valores aplicados: humedad '+$('hum_mv').value+' mV · pH '+$('ph_mv').value+' mV';await estado()}
+  catch(e){$('out').textContent='Error: '+e.message}
+}
+async function seed(){if(!confirm('¿Generar 12 sesiones de ejemplo? Esto se suma al historial actual.'))return;await j('/mock/seed');await estado()}
+async function resetear(){if(!confirm('¿Borrar calibración y todo el historial simulado?'))return;await j('/mock/reset');await estado()}
+estado();setInterval(estado,5000);
+</script>
+</body></html>

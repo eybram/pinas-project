@@ -1,0 +1,73 @@
+// -----------------------------------------------------------------------------
+// dashboard.h - Interfaz web embebida (generada desde dashboard.html)
+// NO EDITAR A MANO. Modifica dashboard.html y ejecuta tools\make_dashboard_h.ps1
+// -----------------------------------------------------------------------------
+#pragma once
+#include <pgmspace.h>
+
+const char DASHBOARD_HTML[] PROGMEM = R"rawliteral(<!DOCTYPE html>
+<html lang="es"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Suelo de Piña · Panel local</title>
+<style>
+:root{font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#1b2938;background:#f3f6f7}
+*{box-sizing:border-box}body{margin:0}header{background:#173e35;color:#fff;padding:26px 20px 24px}header .wrap{max-width:1100px;margin:auto}h1{margin:0;font-size:1.65rem;line-height:1.3}h2{font-size:1.2rem;margin:0 0 12px}h3{margin:0 0 8px;font-size:1rem}small,.muted{color:#607080}header small{color:#bddece}main{max-width:1100px;margin:22px auto;padding:0 16px 45px}.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin:14px 0}.card{background:#fff;border:1px solid #d9e3e5;border-radius:13px;padding:19px;box-shadow:0 2px 7px #0c29240b}.num{font-size:2rem;font-weight:720;letter-spacing:-.04em}.unit{font-size:.9rem;color:#66798b}.state{font-weight:650;padding:5px 10px;border-radius:7px;background:#e9f4ee;color:#1d704b;display:inline-block}.state.warn{background:#fff5e0;color:#8c5a0e}.state.danger{background:#fde9e9;color:#af2626}button,.link{border:1px solid #0c6652;border-radius:8px;background:#0c6652;color:white;padding:10px 15px;font:inherit;cursor:pointer;text-decoration:none;display:inline-block}button.alt,.link.alt{background:white;color:#0c6652}button:disabled{opacity:.55;cursor:wait}label{display:block;font-weight:600;margin:10px 0 4px}select,textarea,input{width:100%;font:inherit;padding:9px;border:1px solid #afbdc6;border-radius:7px;background:#fff}input[type=checkbox]{width:auto;margin-right:8px}label.check{font-weight:500;margin:12px 0}textarea{resize:vertical;min-height:54px}pre{white-space:pre-wrap;overflow-wrap:anywhere}canvas{width:100%;height:195px;display:block}table{border-collapse:collapse;width:100%;font-size:.88rem}td,th{padding:9px;border-bottom:1px solid #e4eaef;text-align:left}th{background:#f6faf9}.scroll{overflow-x:auto}.notice{border-left:3px solid #e7a52d;background:#fffbeb;padding:10px 12px;border-radius:5px;margin:10px 0}.ok{border-color:#178765;background:#edf9f4}.dangerNotice{border-color:#c64747;background:#fff1f1}.columns{display:grid;grid-template-columns:1fr 1fr;gap:14px}.tag{font-weight:600;color:#476376}footer{color:#617581;padding:10px 3px}#toast{min-height:24px;margin:8px 0;font-weight:600}@media(max-width:690px){.columns{grid-template-columns:1fr}h1{font-size:1.35rem}.card{padding:15px}.num{font-size:1.7rem}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><small>Estudio de caso · Una planta · Sin Internet</small><h1>Monitoreo del suelo de piña</h1><p style="margin:5px 0 0;color:#d1e7de">ESP32 · Dashboard local y registro en memoria flash</p></div></header>
+<main>
+<div class="row"><span id="estado" class="state danger">Sin conexión</span><span class="muted" id="almacen">Comprobando almacenamiento</span></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<div class="grid">
+<div class="card"><div class="tag">Humedad · índice local</div><div class="num" id="hum">—</div><div class="unit" id="humRaw">mV: —</div><small>No es humedad volumétrica (%) sin calibración específica.</small></div>
+<div class="card"><div class="tag">pH de muestra preparada</div><div class="num" id="ph">—</div><div class="unit" id="phRaw">mV: —</div><small>Solo válido con sonda inmersa y calibración de 2 puntos.</small></div>
+<div class="card"><div class="tag">Temperatura del suelo</div><div class="num">No disponible</div><div class="unit">°C — falta sensor específico</div><small>El proyecto no inventa lecturas de temperatura.</small></div>
+<div class="card"><div class="tag">Historial guardado</div><div class="num" id="nReg">0</div><div class="unit">Sesiones en LittleFS</div><small>Exporta el CSV después de cada visita.</small></div>
+</div>
+<div class="notice">Este panel refleja <b>dos variables actualmente instrumentables</b>. El pH exige un acondicionador BNC compatible y calibración. No interpretes alertas como un diagnóstico de degradación.</div>
+<div class="columns">
+<section class="card"><h2>Registrar una sesión</h2><p class="muted">Conecta el teléfono a la red del ESP32. La fecha/hora la aporta el teléfono, porque no se ha instalado un RTC.</p>
+<label class="check"><input id="sonda" type="checkbox">El electrodo está en una muestra suelo-agua preparada y estabilizada</label>
+<label for="lluvia">Lluvia reciente</label><select id="lluvia"><option selected="selected">No consta</option><option>Observada</option><option>Informada</option></select>
+<label for="riego">Riego reciente</label><select id="riego"><option selected="selected">No consta</option><option>Observado</option><option>Informado</option></select>
+<label for="agua">Agua acumulada visible</label><select id="agua"><option selected="selected">No determinado</option><option>No</option><option>Sí</option></select>
+<label for="cobertura">Cobertura del suelo</label><select id="cobertura"><option selected="selected">No determinada</option><option>Presente</option><option>Parcial</option><option>Ausente</option></select>
+<label for="notas">Notas de campo (máximo 100 caracteres)</label><textarea id="notas" maxlength="100" placeholder="Sin atribuir causas a cambios observados"></textarea>
+<div class="row" style="margin-top:14px"><button id="prev" onclick="preview()" class="alt">Vista previa</button><button id="save" onclick="guardar()">Guardar sesión</button></div>
+<p id="vista" class="muted"></p>
+</section>
+<section class="card"><h2>Calibración de sensores</h2><p class="muted">Registrar referencias físicas antes de obtener valores interpretables.</p>
+<h3>Humedad · YL-69</h3><p class="muted">Referencias localmente elegidas: seca y húmeda. El índice resultante NO representa un porcentaje de agua validado.</p>
+<div class="row"><button class="alt" onclick="calibrar('seco')">Guardar referencia seca</button><button class="alt" onclick="calibrar('humedo')">Guardar referencia húmeda</button></div>
+<p id="refHum" class="muted">—</p>
+<h3 style="margin-top:20px">pH · E201 + acondicionador</h3><p class="muted">Enjuaga con agua desionizada, coloca en tampón pH 7.00, espera estabilización y guarda. Repite en pH 4.00. Es necesaria la compatibilidad del módulo y el electrodo.</p>
+<div class="row"><button class="alt" onclick="calibrar('ph7')">Registrar tampón 7</button><button class="alt" onclick="calibrar('ph4')">Registrar tampón 4</button></div>
+<p id="refPh" class="muted">—</p>
+<div class="notice">Los criterios de variación de humedad que utiliza este prototipo son <b>demostrativos</b>; deben revisarse en el protocolo antes de evaluar la hipótesis.</div>
+</section>
+</div>
+<section class="card" style="margin-top:14px"><div class="row" style="justify-content:space-between"><h2>Historial temporal</h2><a class="link alt" href="/api/csv" download="suelo_pina.csv">Exportar CSV</a></div>
+<div class="columns"><div><h3>Índice de humedad</h3><canvas id="grafHum" aria-label="Gráfica de índice de humedad"></canvas></div><div><h3>pH de la muestra</h3><canvas id="grafPh" aria-label="Gráfica de pH"></canvas></div></div><div class="scroll"><table><thead><tr><th>Fecha</th><th>Humedad</th><th>pH</th><th>Coincidencia</th><th>Persistencia</th></tr></thead><tbody id="tabla"></tbody></table></div>
+</section>
+<footer>Sin servidor externo · Datos en flash del ESP32 · Respaldo manual recomendado · Acceso limitado al alcance Wi-Fi</footer>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+function msg(s,error=false){$('toast').textContent=s;$('toast').style.color=error?'#ad2f2f':'#137357';}
+async function getJSON(url,opt){const r=await fetch(url,opt);let o;try{o=await r.json()}catch(e){throw new Error('El ESP32 no respondió correctamente.')}if(!r.ok||o.error)throw new Error(o.error||`HTTP ${r.status}`);return o;}
+function controls(id,disabled){$(id).disabled=disabled;}
+function form(){return new URLSearchParams({ph_present:$('sonda').checked?'1':'0',timestamp:new Date().toISOString(),epoch_s:Math.floor(Date.now()/1000),lluvia:$('lluvia').value,riego:$('riego').value,agua:$('agua').value,cobertura:$('cobertura').value,notas:$('notas').value});}
+async function preview(){controls('prev',true);try{const j=await getJSON('/api/preview?ph_present='+($('sonda').checked?'1':'0'));$('vista').textContent=`Humedad: ${j.hum_index===null?'sin calibrar':j.hum_index.toFixed(1)+' índice'} · pH: ${j.ph===null?'no evaluable':j.ph.toFixed(2)} · ${j.status}`;await estado();}catch(e){msg(e.message,true)}finally{controls('prev',false)}}
+async function guardar(){if(!confirm('¿Guardar la sesión con la fecha y hora de este teléfono?'))return;controls('save',true);try{const j=await getJSON('/api/save',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:form()});msg('Sesión guardada correctamente. '+j.status);$('notas').value='';await cargar();await estado()}catch(e){msg(e.message,true)}finally{controls('save',false)}}
+async function calibrar(tipo){if(!confirm('¿El sensor está colocado y estabilizado en la referencia '+tipo+'?'))return;try{const j=await getJSON('/api/calibrar',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({tipo})});msg(j.message||'Referencia guardada');await estado()}catch(e){msg(e.message,true)}}
+async function estado(){try{const x=await getJSON('/api/status');$('estado').textContent=x.storage?'Sistema disponible':'Almacenamiento no disponible';$('estado').className='state '+(x.storage?'':'danger');$('almacen').textContent=x.storage?'Memoria flash lista':'No guardar hasta revisar el sistema de archivos';$('humRaw').textContent='ADC: '+x.hum_mv+' mV';$('phRaw').textContent='ADC: '+x.ph_mv+' mV';$('hum').textContent=x.hum_index===null?'Sin calibrar':x.hum_index.toFixed(1);$('ph').textContent='Solo en muestra';$('refHum').textContent=`Seca: ${x.hum_dry===null?'—':x.hum_dry+' mV'} · Húmeda: ${x.hum_wet===null?'—':x.hum_wet+' mV'}`;$('refPh').textContent=`Tampón 7: ${x.ph7===null?'—':x.ph7+' mV'} · Tampón 4: ${x.ph4===null?'—':x.ph4+' mV'}`;}catch(e){$('estado').textContent='Sin conexión';$('estado').className='state danger';msg(e.message,true)}}
+function parseCSV(t){const lines=t.trim().split(/\r?\n/);if(lines.length<2)return [];const heads=lines[0].split(',');return lines.slice(1).filter(Boolean).map(line=>Object.fromEntries(line.split(',').map((c,i)=>[heads[i],c])));}
+function chart(id,rows,key,min,max){const can=$(id),ctx=can.getContext('2d'),r=can.getBoundingClientRect(),dpr=window.devicePixelRatio||1;can.width=Math.max(200,r.width*dpr);can.height=195*dpr;ctx.scale(dpr,dpr);const w=r.width,h=195;ctx.clearRect(0,0,w,h);ctx.strokeStyle='#dbe4e6';ctx.lineWidth=1;for(let i=0;i<=4;i++){let y=15+(h-35)*i/4;ctx.beginPath();ctx.moveTo(34,y);ctx.lineTo(w-8,y);ctx.stroke();}ctx.fillStyle='#5c7078';ctx.font='11px system-ui';let vals=rows.map(q=>{const v=Number(q[key]);return q[key]===''||!Number.isFinite(v)?null:v;});if(!vals.some(v=>v!==null)){ctx.fillText('Aún no hay datos evaluables',48,96);return;}const valid=vals.filter(x=>x!==null);let lo=min??Math.min(...valid),hi=max??Math.max(...valid);if(lo===hi)hi=lo+1;ctx.strokeStyle=key==='ph'?'#d08c26':'#21866d';ctx.lineWidth=2.5;ctx.beginPath();let drawing=false;vals.forEach((v,i)=>{if(v===null){drawing=false;return;}const x=35+(w-48)*i/Math.max(1,rows.length-1),y=15+(h-35)*(1-(v-lo)/(hi-lo));if(!drawing){ctx.moveTo(x,y);drawing=true}else ctx.lineTo(x,y);});ctx.stroke();ctx.fillStyle='#647985';ctx.fillText(hi.toFixed(1),2,17);ctx.fillText(lo.toFixed(1),2,h-20);}
+async function cargar(){try{let r=await fetch('/api/csv?view=1');if(!r.ok)throw Error('No se pudo leer el historial');let rows=parseCSV(await r.text());$('nReg').textContent=rows.length;$('tabla').replaceChildren();rows.slice(-15).reverse().forEach(a=>{const tr=document.createElement('tr');const fields=[new Date(a.fecha_utc).toLocaleString(),a.hum_ind||'—',a.ph||'—',a.coincide==='1'?'Sí':'No',a.persistente==='1'?'Sí':'No'];fields.forEach(v=>{const td=document.createElement('td');td.textContent=v;tr.appendChild(td)});$('tabla').append(tr)});chart('grafHum',rows,'hum_ind',0,100);chart('grafPh',rows,'ph',3,8);}catch(e){msg(e.message,true)}}
+window.addEventListener('resize',()=>cargar());estado();cargar();setInterval(estado,12000);
+</script>
+
+</body></html>
+)rawliteral";
